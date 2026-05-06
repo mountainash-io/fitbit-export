@@ -1,0 +1,12 @@
+{
+  "name": "fitbit-export",
+  "version": "0.1.0",
+  "description": "Extract all your Fitbit data before the API shuts down (September 2026)",
+  "skills": [
+    {
+      "name": "fitbit-export",
+      "path": "skills/fitbit-export/SKILL.md",
+      "description": "Interactive Fitbit data export — bootstraps environment, handles OAuth, extracts 12 data types with checkpoint/resume"
+    }
+  ]
+}
