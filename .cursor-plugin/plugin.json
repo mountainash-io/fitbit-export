@@ -1,0 +1,19 @@
+{
+  "name": "fitbit-export",
+  "description": "Extract all your Fitbit data before the API shuts down (September 2026)",
+  "version": "0.1.0",
+  "author": {
+    "name": "Nathaniel Ramm",
+    "email": "nathaniel.ramm@discretedatascience.com"
+  },
+  "homepage": "https://github.com/mountainash-io/fitbit-export",
+  "repository": "https://github.com/mountainash-io/fitbit-export",
+  "license": "MIT",
+  "keywords": [
+    "fitbit",
+    "data-export",
+    "health",
+    "backup",
+    "fitness"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "fitbit-export-marketplace",
+  "owner": {
+    "name": "Nathaniel Ramm",
+    "email": "nathaniel.ramm@discretedatascience.com"
+  },
+  "metadata": {
+    "description": "Marketplace entry for fitbit-export"
+  },
+  "plugins": [
+    {
+      "name": "fitbit-export",
+      "source": "./",
+      "description": "Extract all your Fitbit data before the API shuts down (September 2026)"
+    }
+  ]
+}
