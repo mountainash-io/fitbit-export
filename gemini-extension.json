@@ -1,0 +1,6 @@
+{
+  "name": "fitbit-export",
+  "description": "Extract all your Fitbit data before the API shuts down (September 2026)",
+  "version": "0.1.0",
+  "contextFileName": "GEMINI.md"
+}

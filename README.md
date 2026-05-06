@@ -6,6 +6,43 @@ Fitbit accounts stop working on May 19, 2026. Data is permanently deleted after 
 
 ## Quick Start
 
+### Claude Code
+
+```bash
+claude plugin add https://github.com/mountainash-io/fitbit-export
+```
+
+Then invoke: `/fitbit-export`
+
+### Cursor
+
+```bash
+git clone https://github.com/mountainash-io/fitbit-export.git
+```
+
+Open the cloned directory as a Cursor workspace. Cursor discovers the plugin via `.cursor-plugin/plugin.json`. Ask: *"Run the fitbit-export skill"*
+
+### Gemini CLI
+
+```bash
+git clone https://github.com/mountainash-io/fitbit-export.git
+cd fitbit-export
+```
+
+Gemini CLI discovers the extension via `gemini-extension.json`. Then: `@skills/fitbit-export/SKILL.md Export my Fitbit data`
+
+### Codex
+
+```bash
+git clone https://github.com/mountainash-io/fitbit-export.git ~/fitbit-export
+mkdir -p ~/.agents/plugins
+ln -s ~/fitbit-export ~/.agents/plugins/fitbit-export
+```
+
+Restart Codex, then ask: *"Use the fitbit-export skill"*
+
+### Run directly (no AI agent)
+
 ```bash
 git clone https://github.com/mountainash-io/fitbit-export.git
 cd fitbit-export
@@ -15,7 +52,7 @@ fitbit-export
 
 A browser window will open for you to log into Fitbit and authorize the export. Once authorized, the tool extracts all your data automatically.
 
-See [INSTALL.md](INSTALL.md) for Claude Code, Cursor, Gemini CLI, and Codex installation.
+See [INSTALL.md](INSTALL.md) for detailed platform instructions.
 
 ## What Gets Exported
 
