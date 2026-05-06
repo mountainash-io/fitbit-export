@@ -15,6 +15,8 @@ fitbit-export
 
 A browser window will open for you to log into Fitbit and authorize the export. Once authorized, the tool extracts all your data automatically.
 
+See [INSTALL.md](INSTALL.md) for Claude Code, Cursor, Gemini CLI, and Codex installation.
+
 ## What Gets Exported
 
 | Data Type | Description |
