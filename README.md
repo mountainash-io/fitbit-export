@@ -16,7 +16,11 @@ Then invoke: `/fitbit-export`
 
 ### Cursor
 
-Clone the repo and open it as a workspace. Cursor picks up the skill automatically via `.github/copilot-instructions.md`. Ask: *"Run the fitbit-export skill"*
+```bash
+git clone https://github.com/mountainash-io/fitbit-export.git
+```
+
+Open the cloned directory as a Cursor workspace. Cursor discovers the plugin via `.cursor-plugin/plugin.json`. Ask: *"Run the fitbit-export skill"*
 
 ### Gemini CLI
 
@@ -25,14 +29,14 @@ git clone https://github.com/mountainash-io/fitbit-export.git
 cd fitbit-export
 ```
 
-Then: `@skills/fitbit-export/SKILL.md Export my Fitbit data`
+Gemini CLI discovers the extension via `gemini-extension.json`. Then: `@skills/fitbit-export/SKILL.md Export my Fitbit data`
 
 ### Codex
 
 ```bash
 git clone https://github.com/mountainash-io/fitbit-export.git ~/fitbit-export
-mkdir -p ~/.agents/skills
-ln -s ~/fitbit-export/skills/fitbit-export ~/.agents/skills/fitbit-export
+mkdir -p ~/.agents/plugins
+ln -s ~/fitbit-export ~/.agents/plugins/fitbit-export
 ```
 
 Restart Codex, then ask: *"Use the fitbit-export skill"*
