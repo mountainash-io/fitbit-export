@@ -1,10 +1,22 @@
 # fitbit-export
 
-**Extract all your Fitbit data before the API shuts down in September 2026.**
+**Extract all your Fitbit data before the API shuts down.**
 
-Fitbit accounts stop working on May 19, 2026. Data is permanently deleted after July 15, 2026. This tool extracts everything from your account via the Fitbit API and saves it as raw JSON files.
+Google is phasing out Fitbit accounts and the legacy Fitbit Web API:
 
-## Quick Start
+| Date | What happens | What you need to do |
+|------|-------------|---------------------|
+| **May 19, 2026** | Fitbit-only accounts stop working | Migrate to a Google account to keep access |
+| **July 15, 2026** | Data for non-migrated accounts deleted from servers | If you haven't migrated, your data is gone |
+| **September 2026** | Fitbit Web API shut down permanently | **Run this tool before then — after this date, no one can extract Fitbit data via the API** |
+
+If you've already migrated to a Google account, your data is safe until September. But the API shutdown is the hard deadline for everyone.
+
+This repo is both a **Python CLI tool** you can run directly, and an **AI agent skill** that guides you through the export interactively on Claude Code, Cursor, Gemini CLI, or Codex.
+
+## Install as AI Agent Skill
+
+The skill walks you through authentication, selects data types, handles rate limits, and resumes interrupted exports.
 
 ### Claude Code
 
@@ -35,7 +47,11 @@ codex plugin marketplace add mountainash-io/fitbit-export
 
 Then open `/plugins` in Codex and install `fitbit-export`.
 
-### Run directly (no AI agent)
+See [INSTALL.md](INSTALL.md) for local clone installs and verification steps.
+
+## Install as Python CLI
+
+No AI agent required — run the tool directly from the command line.
 
 ```bash
 git clone https://github.com/mountainash-io/fitbit-export.git
@@ -44,9 +60,7 @@ pip install .
 fitbit-export
 ```
 
-A browser window will open for you to log into Fitbit and authorize the export. Once authorized, the tool extracts all your data automatically.
-
-See [INSTALL.md](INSTALL.md) for local clone installs and verification steps.
+A browser window will open for Fitbit authorization. Once authorized, the tool extracts all your data automatically.
 
 ## What Gets Exported
 
@@ -90,7 +104,7 @@ The tool saves progress as it goes. If it gets interrupted (rate limits, crashes
 
 Intraday heart rate data is the largest dataset and can take many hours for long-time users. The tool will resume at the exact day it stopped.
 
-## Options
+## CLI Options
 
 ```
 --start DATE     Start date (default: 2010-01-01)
@@ -133,7 +147,7 @@ fitbit-export-output/
 ## Requirements
 
 - Python 3.11+
-- A Fitbit account (before May 19, 2026)
+- A Fitbit account with data (before the API shuts down in September 2026)
 
 ## License
 
