@@ -9,37 +9,31 @@ Fitbit accounts stop working on May 19, 2026. Data is permanently deleted after 
 ### Claude Code
 
 ```bash
-claude plugin add https://github.com/mountainash-io/fitbit-export
+/plugin marketplace add mountainash-io/fitbit-export
+/plugin install fitbit-export@fitbit-export-marketplace
 ```
 
 Then invoke: `/fitbit-export`
 
 ### Cursor
 
-```bash
-git clone https://github.com/mountainash-io/fitbit-export.git
 ```
-
-Open the cloned directory as a Cursor workspace. Cursor discovers the plugin via `.cursor-plugin/plugin.json`. Ask: *"Run the fitbit-export skill"*
+/add-plugin fitbit-export@https://github.com/mountainash-io/fitbit-export
+```
 
 ### Gemini CLI
 
 ```bash
-git clone https://github.com/mountainash-io/fitbit-export.git
-cd fitbit-export
+gemini extensions install mountainash-io/fitbit-export
 ```
-
-Gemini CLI discovers the extension via `gemini-extension.json`. Then: `@skills/fitbit-export/SKILL.md Export my Fitbit data`
 
 ### Codex
 
 ```bash
-git clone https://github.com/mountainash-io/fitbit-export.git ~/fitbit-export
-mkdir -p ~/.agents/plugins
-ln -s ~/fitbit-export ~/.agents/plugins/fitbit-export
+codex plugin marketplace add mountainash-io/fitbit-export
 ```
 
-Restart Codex, then ask: *"Use the fitbit-export skill"*
+Then open `/plugins` in Codex and install `fitbit-export`.
 
 ### Run directly (no AI agent)
 
@@ -52,7 +46,7 @@ fitbit-export
 
 A browser window will open for you to log into Fitbit and authorize the export. Once authorized, the tool extracts all your data automatically.
 
-See [INSTALL.md](INSTALL.md) for detailed platform instructions.
+See [INSTALL.md](INSTALL.md) for local clone installs and verification steps.
 
 ## What Gets Exported
 
