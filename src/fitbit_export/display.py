@@ -8,9 +8,10 @@ from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn, TaskID  # noqa: F401 — used by ProgressTracker in Task 3
+from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn, TaskID
 
 from fitbit_export.extract import DATA_TYPES
+from fitbit_export.models import ProgressEvent
 
 console = Console()
 
@@ -159,3 +160,51 @@ def render_action_menu(data: DashboardData) -> str:
         except ValueError:
             pass
         console.print(f"[red]Please enter a number 1-{len(options)}[/red]")
+
+
+class ProgressTracker:
+    def __init__(self, data_types: list[str] | None = None) -> None:
+        self._types = data_types or DATA_TYPES
+        self._progress = Progress(
+            TextColumn("{task.description}", justify="right", style="bold"),
+            BarColumn(bar_width=30),
+            TextColumn("{task.percentage:>3.0f}%"),
+            TextColumn("{task.fields[status]}", style="dim"),
+            TimeRemainingColumn(),
+            console=console,
+        )
+        self._tasks: dict[str, TaskID] = {}
+
+    def start(self) -> None:
+        self._progress.start()
+        for dtype in self._types:
+            self._tasks[dtype] = self._progress.add_task(
+                dtype, total=100, status="", visible=True,
+            )
+
+    def stop(self) -> None:
+        self._progress.stop()
+
+    def on_progress(self, evt: ProgressEvent) -> None:
+        task_id = self._tasks.get(evt.data_type)
+        if task_id is None:
+            return
+
+        if evt.status == "skipped":
+            self._progress.update(task_id, completed=100, status="[green]✓ done[/green]")
+        elif evt.status == "starting":
+            self._progress.update(task_id, completed=0, status="starting...")
+        elif evt.status == "progress":
+            pct = (evt.pct or 0) * 100
+            status_text = ""
+            if evt.current_date:
+                status_text = str(evt.current_date)
+            elif evt.message:
+                status_text = evt.message
+            self._progress.update(task_id, completed=pct, status=status_text)
+        elif evt.status == "rate_limited":
+            self._progress.update(task_id, status=f"[yellow]{evt.message}[/yellow]")
+        elif evt.status == "complete":
+            self._progress.update(task_id, completed=100, status=f"[green]{evt.message}[/green]")
+        elif evt.status == "error":
+            self._progress.update(task_id, status=f"[red]{evt.message}[/red]")
