@@ -129,6 +129,7 @@ def _fetch_heart_rate_summary(client: httpx.Client, start: date, end: date) -> l
 def _fetch_heart_rate_intraday(
     client: httpx.Client, start: date, end: date,
     output_dir: Path, checkpoint: Checkpoint, cp_path: Path,
+    on_progress: Callable[[ProgressEvent], None] | None = None,
 ) -> list[dict]:
     part_dir = output_dir / "raw" / "heart_rate_intraday"
     results: list[dict] = []
@@ -155,6 +156,16 @@ def _fetch_heart_rate_intraday(
             write_json_atomic(existing, year_file)
         checkpoint.in_progress["heart_rate_intraday"] = {"last_completed_date": current.isoformat()}
         save_checkpoint(checkpoint, cp_path)
+        if on_progress:
+            total_days = (end - start).days + 1
+            done_days = (current - start).days + 1
+            on_progress(ProgressEvent(
+                data_type="heart_rate_intraday",
+                status="progress",
+                current_date=current,
+                pct=done_days / total_days if total_days > 0 else 1.0,
+                message=None,
+            ))
         current += timedelta(days=1)
     return results
 
@@ -334,6 +345,7 @@ class FitbitExtractor:
                     items = _fetch_heart_rate_intraday(
                         self._client, start, self._end,
                         self._output_dir, checkpoint, cp_path,
+                        on_progress=self._on_progress,
                     )
                 elif dtype == "activity_tcx":
                     items = _fetch_activity_tcx(
