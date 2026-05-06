@@ -20,6 +20,7 @@ A browser window will open for you to log into Fitbit and authorize the export. 
 | Data Type | Description |
 |-----------|-------------|
 | activities | All logged exercises and workouts |
+| activity_tcx | GPS tracks (TCX files) for manually-logged activities |
 | sleep | Sleep sessions with stage data (deep, light, REM, awake) |
 | heart_rate_summary | Daily resting heart rate and HR zones |
 | heart_rate_intraday | Minute-by-minute heart rate (largest dataset) |
@@ -75,11 +76,10 @@ By default, this tool uses a shared Fitbit developer app. If you prefer to use y
 1. Go to https://dev.fitbit.com/apps/new
 2. Register an app (OAuth 2.0 Application Type: **Personal**)
 3. Set Redirect URL to `http://localhost:8080/callback`
-4. Set environment variables:
+4. Set environment variable:
 
 ```bash
 export FITBIT_CLIENT_ID=your_client_id
-export FITBIT_CLIENT_SECRET=your_client_secret
 fitbit-export
 ```
 
@@ -90,6 +90,11 @@ fitbit-export-output/
 +-- 26CBRV-nathaniel/
     +-- raw/
     |   +-- activities.json
+    |   +-- activity_tcx/
+    |   |   +-- 12345.tcx
+    |   |   +-- 67890.tcx
+    |   |   +-- ...
+    |   +-- activity_tcx.json
     |   +-- sleep.json
     |   +-- heart_rate_summary.json
     |   +-- heart_rate_intraday/

@@ -15,7 +15,6 @@ from urllib.parse import urlencode, urlparse, parse_qs
 import httpx
 
 DEFAULT_CLIENT_ID = os.environ.get("FITBIT_CLIENT_ID", "22C4DT")
-DEFAULT_CLIENT_SECRET = os.environ.get("FITBIT_CLIENT_SECRET", "30ce443dcc6181dc6b422d90cb4b8218")
 
 TOKEN_DIR = Path("~/.fitbit-export").expanduser()
 
@@ -69,7 +68,7 @@ def _build_pkce() -> tuple[str, str]:
     return verifier, challenge
 
 
-def _run_oauth_flow(client_id: str, client_secret: str) -> dict:
+def _run_oauth_flow(client_id: str) -> dict:
     verifier, challenge = _build_pkce()
     state = secrets.token_urlsafe(32)
     redirect_uri = f"http://localhost:{CALLBACK_PORT}/callback"
@@ -100,7 +99,6 @@ def _run_oauth_flow(client_id: str, client_secret: str) -> dict:
             "code": callback_params["code"],
             "redirect_uri": redirect_uri,
             "client_id": client_id,
-            "client_secret": client_secret,
             "code_verifier": verifier,
         })
         resp.raise_for_status()
@@ -117,13 +115,12 @@ def _run_oauth_flow(client_id: str, client_secret: str) -> dict:
     }
 
 
-def _refresh_tokens(refresh_token: str, client_id: str, client_secret: str) -> dict:
+def _refresh_tokens(refresh_token: str, client_id: str) -> dict:
     with httpx.Client() as http:
         resp = http.post(TOKEN_URL, data={
             "grant_type": "refresh_token",
             "refresh_token": refresh_token,
             "client_id": client_id,
-            "client_secret": client_secret,
         })
         resp.raise_for_status()
         token_data = resp.json()
@@ -184,15 +181,13 @@ class FitbitAuth:
     def __init__(
         self,
         client_id: str = DEFAULT_CLIENT_ID,
-        client_secret: str = DEFAULT_CLIENT_SECRET,
         token_dir: Path = TOKEN_DIR,
     ) -> None:
         self._client_id = client_id
-        self._client_secret = client_secret
         self._token_dir = token_dir
 
     def add_user(self) -> AuthenticatedUser:
-        tokens = _run_oauth_flow(self._client_id, self._client_secret)
+        tokens = _run_oauth_flow(self._client_id)
         client = _make_client(tokens["access_token"])
         user_id, display_name = _fetch_profile(client)
         _save_tokens(self._token_dir, user_id, display_name, tokens)
@@ -207,7 +202,7 @@ class FitbitAuth:
 
         if _is_expired(tokens.get("token_expires_at")):
             tokens = _refresh_tokens(
-                tokens["refresh_token"], self._client_id, self._client_secret,
+                tokens["refresh_token"], self._client_id,
             )
             _save_tokens(
                 self._token_dir, user_id,

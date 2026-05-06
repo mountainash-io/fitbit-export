@@ -54,8 +54,37 @@ def test_extractor_continues_on_failure(tmp_path):
 
 def test_data_types_list():
     assert "activities" in DATA_TYPES
+    assert "activity_tcx" in DATA_TYPES
     assert "heart_rate_intraday" in DATA_TYPES
-    assert len(DATA_TYPES) == 11
+    assert len(DATA_TYPES) == 12
+
+
+def test_activity_tcx_download(tmp_path):
+    tcx_content = b"<?xml version='1.0'?>\n" + b"<line>\n" * 20
+    activities_resp = _mock_response({
+        "pagination": {"next": ""},
+        "activities": [
+            {"logId": 111, "activityName": "Run", "logType": "tracker",
+             "startTime": "2024-01-15T08:00:00.000+00:00"},
+            {"logId": 222, "activityName": "Walk", "logType": "auto_detected",
+             "startTime": "2024-01-15T12:00:00.000+00:00"},
+        ],
+    })
+    tcx_resp = MagicMock()
+    tcx_resp.status_code = 200
+    tcx_resp.content = tcx_content
+    tcx_resp.raise_for_status = MagicMock()
+    tcx_resp.headers = {}
+
+    client = MagicMock()
+    client.get.side_effect = [activities_resp, tcx_resp]
+
+    extractor = FitbitExtractor(client=client, output_dir=tmp_path, start=date(2024, 1, 1), end=date(2024, 1, 31))
+    result = extractor.run(data_types=["activity_tcx"])
+
+    assert "activity_tcx" in result.completed
+    assert (tmp_path / "raw" / "activity_tcx" / "111.tcx").exists()
+    assert not (tmp_path / "raw" / "activity_tcx" / "222.tcx").exists()  # auto_detected skipped
 
 
 def test_intraday_checkpoint_per_day(tmp_path):

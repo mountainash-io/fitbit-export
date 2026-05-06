@@ -83,6 +83,41 @@ def _fetch_activities(client: httpx.Client, start: date, end: date) -> list[dict
     return results
 
 
+def _fetch_activity_tcx(
+    client: httpx.Client, start: date, end: date,
+    output_dir: Path, checkpoint: Checkpoint, cp_path: Path,
+) -> list[dict]:
+    tcx_dir = output_dir / "raw" / "activity_tcx"
+    tcx_dir.mkdir(parents=True, exist_ok=True)
+
+    activities = _fetch_activities(client, start, end)
+    downloaded = []
+    for activity in activities:
+        log_id = activity.get("logId")
+        if not log_id:
+            continue
+        if activity.get("logType") == "auto_detected":
+            continue
+
+        tcx_path = tcx_dir / f"{log_id}.tcx"
+        if tcx_path.exists():
+            downloaded.append({"logId": log_id, "file": str(tcx_path.name)})
+            continue
+
+        resp = _request_with_retry(
+            client, f"/1/user/-/activities/{log_id}.tcx", {},
+        )
+        content = resp.content
+        if content.count(b"\n") <= 15:
+            continue
+
+        tcx_path.write_bytes(content)
+        downloaded.append({"logId": log_id, "file": str(tcx_path.name)})
+
+    write_json_atomic(downloaded, output_dir / "raw" / "activity_tcx.json")
+    return downloaded
+
+
 def _fetch_sleep(client: httpx.Client, start: date, end: date) -> list[dict]:
     return _fetch_chunked(client, "/1.2/user/-/sleep/date/{start}/{end}.json", start, end, 100, "sleep")
 
@@ -213,7 +248,7 @@ def _fetch_nutrition(client: httpx.Client, start: date, end: date) -> list[dict]
 
 DATA_TYPES = [
     "spo2", "weight", "nutrition", "daily_summary", "activities",
-    "sleep", "heart_rate_summary", "hrv", "breathing_rate",
+    "activity_tcx", "sleep", "heart_rate_summary", "hrv", "breathing_rate",
     "skin_temperature", "heart_rate_intraday",
 ]
 
@@ -297,6 +332,11 @@ class FitbitExtractor:
 
                 if dtype == "heart_rate_intraday":
                     items = _fetch_heart_rate_intraday(
+                        self._client, start, self._end,
+                        self._output_dir, checkpoint, cp_path,
+                    )
+                elif dtype == "activity_tcx":
+                    items = _fetch_activity_tcx(
                         self._client, start, self._end,
                         self._output_dir, checkpoint, cp_path,
                     )
