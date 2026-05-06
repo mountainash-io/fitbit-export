@@ -15,7 +15,7 @@ from urllib.parse import urlencode, urlparse, parse_qs
 import httpx
 
 DEFAULT_CLIENT_ID = os.environ.get("FITBIT_CLIENT_ID", "22C4DT")
-DEFAULT_CLIENT_SECRET = os.environ.get("FITBIT_CLIENT_SECRET", "")
+DEFAULT_CLIENT_SECRET = os.environ.get("FITBIT_CLIENT_SECRET", "30ce443dcc6181dc6b422d90cb4b8218")
 
 TOKEN_DIR = Path("~/.fitbit-export").expanduser()
 
