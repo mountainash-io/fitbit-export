@@ -69,20 +69,6 @@ Intraday heart rate data is the largest dataset and can take many hours for long
 --user ID        Export only this user
 ```
 
-## Using Your Own Fitbit App
-
-By default, this tool uses a shared Fitbit developer app. If you prefer to use your own:
-
-1. Go to https://dev.fitbit.com/apps/new
-2. Register an app (OAuth 2.0 Application Type: **Personal**)
-3. Set Redirect URL to `http://localhost:8080/callback`
-4. Set environment variable:
-
-```bash
-export FITBIT_CLIENT_ID=your_client_id
-fitbit-export
-```
-
 ## Output Structure
 
 ```
