@@ -56,7 +56,7 @@ No AI agent required — run the tool directly from the command line.
 ```bash
 git clone https://github.com/mountainash-io/fitbit-export.git
 cd fitbit-export
-pip install .
+uv pip install .
 fitbit-export
 ```
 
@@ -83,19 +83,19 @@ A browser window will open for Fitbit authorization. Once authorized, the tool e
 
 ```bash
 # First user -- opens browser
-fitbit-export
+fitbit-export add-user
 
 # Add another user
-fitbit-export --add-user
+fitbit-export add-user
 
 # List all authenticated users
-fitbit-export --list-users
+fitbit-export list-users
 
-# Export all users (default)
-fitbit-export
+# Export all users
+fitbit-export export
 
 # Export specific user
-fitbit-export --user 26CBRV
+fitbit-export export --user 26CBRV
 ```
 
 ## Resuming Interrupted Exports
@@ -104,15 +104,25 @@ The tool saves progress as it goes. If it gets interrupted (rate limits, crashes
 
 Intraday heart rate data is the largest dataset and can take many hours for long-time users. The tool will resume at the exact day it stopped.
 
-## CLI Options
+## CLI Commands
 
 ```
+fitbit-export                Show dashboard and choose an action
+fitbit-export export         Run the data export
+fitbit-export add-user       Add a new Fitbit account
+fitbit-export list-users     List authenticated accounts
+fitbit-export status         Show export progress
+```
+
+## Export Options
+
+```
+fitbit-export export [OPTIONS]
+
 --start DATE     Start date (default: 2010-01-01)
 --end DATE       End date (default: today)
---output DIR     Output directory (default: ./fitbit-export-output)
+--output DIR     Output directory (default: ~/fitbit-export-output)
 --types TYPES    Comma-separated data types to export
---add-user       Add a new Fitbit account
---list-users     List authenticated accounts
 --user ID        Export only this user
 ```
 
