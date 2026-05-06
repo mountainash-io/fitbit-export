@@ -1,14 +1,21 @@
 # fitbit-export — Codex Installation
 
-## Skill-based install (recommended)
-
-Symlink the skill into your Codex skills directory:
+## Plugin install (recommended)
 
 ```bash
-# Clone the repo
 git clone https://github.com/mountainash-io/fitbit-export.git ~/fitbit-export
+mkdir -p ~/.agents/plugins
+ln -s ~/fitbit-export ~/.agents/plugins/fitbit-export
+```
 
-# Expose to Codex skill discovery
+Codex discovers the plugin via `.codex-plugin/plugin.json` and exposes the `fitbit-export` skill.
+
+## Skill-only install (alternative)
+
+If you only want the skill without plugin metadata:
+
+```bash
+git clone https://github.com/mountainash-io/fitbit-export.git ~/fitbit-export
 mkdir -p ~/.agents/skills
 ln -s ~/fitbit-export/skills/fitbit-export ~/.agents/skills/fitbit-export
 ```
@@ -25,13 +32,11 @@ The skill references Claude Code tool names. Codex equivalents:
 
 ## Verify
 
-After symlinking, restart Codex and confirm the skill is discoverable:
+After installation, restart Codex and confirm:
 
 ```
 > What skills do you have for Fitbit?
 ```
-
-The agent should recognize `fitbit-export` and be able to walk you through the export.
 
 ## Quick Reference
 

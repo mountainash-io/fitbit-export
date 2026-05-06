@@ -11,18 +11,22 @@ claude plugin add https://github.com/mountainash-io/fitbit-export
 
 Then invoke: `/fitbit-export`
 
+**Plugin manifest:** `plugin.json` (root) + `.claude-plugin/plugin.json` (metadata)
+
 ## Cursor
 
-1. Clone the repo into your workspace or a shared location:
+1. Clone the repo:
    ```bash
    git clone https://github.com/mountainash-io/fitbit-export.git
    ```
 
 2. Open the cloned directory as a Cursor workspace (or add it to your existing workspace).
 
-3. Cursor will automatically pick up `.github/copilot-instructions.md` for context and `skills/fitbit-export/SKILL.md` for the export workflow.
+3. Cursor discovers the plugin via `.cursor-plugin/plugin.json` and loads context from `.github/copilot-instructions.md`.
 
 4. Ask the agent: *"Run the fitbit-export skill to export my Fitbit data"*
+
+**Plugin manifest:** `.cursor-plugin/plugin.json` + `.cursor-plugin/marketplace.json`
 
 ## Gemini CLI
 
@@ -31,7 +35,7 @@ Then invoke: `/fitbit-export`
    git clone https://github.com/mountainash-io/fitbit-export.git
    ```
 
-2. From within the cloned directory, Gemini CLI will read `GEMINI.md` for context and tool mapping.
+2. From within the cloned directory, Gemini CLI discovers the extension via `gemini-extension.json` and reads `GEMINI.md` for context and tool mapping.
 
 3. Reference the skill:
    ```
@@ -40,18 +44,30 @@ Then invoke: `/fitbit-export`
 
 4. Or ask directly: *"Follow the fitbit-export skill to export my data"*
 
+**Extension manifest:** `gemini-extension.json`
+
 ## Codex
 
-1. Clone and symlink to skill discovery:
+1. Clone the repo:
    ```bash
    git clone https://github.com/mountainash-io/fitbit-export.git ~/fitbit-export
+   ```
+
+2. Register as a Codex plugin:
+   ```bash
+   mkdir -p ~/.agents/plugins
+   ln -s ~/fitbit-export ~/.agents/plugins/fitbit-export
+   ```
+
+   Or for skill-only discovery:
+   ```bash
    mkdir -p ~/.agents/skills
    ln -s ~/fitbit-export/skills/fitbit-export ~/.agents/skills/fitbit-export
    ```
 
-2. Restart Codex, then ask: *"Use the fitbit-export skill"*
+3. Restart Codex, then ask: *"Use the fitbit-export skill"*
 
-See `.codex/INSTALL.md` for detailed Codex instructions.
+**Plugin manifest:** `.codex-plugin/plugin.json`
 
 ## All Platforms: Python Setup
 
