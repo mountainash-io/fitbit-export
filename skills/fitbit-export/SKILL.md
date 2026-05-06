@@ -105,7 +105,7 @@ AUTHENTICATE(plugin_dir, output_dir):
       DISPLAY "No problem. Run this skill again when you're ready."
       HALT
 
-    result = Bash("cd {plugin_dir} && .venv/bin/fitbit-export --add-user --output {output_dir}")
+    result = Bash("cd {plugin_dir} && .venv/bin/fitbit-export add-user")
     DISPLAY result
     users = DISCOVER_USERS()
 
@@ -126,14 +126,14 @@ AUTHENTICATE(plugin_dir, output_dir):
     )
 
     IF add_more == "Yes, add another":
-      Bash("cd {plugin_dir} && .venv/bin/fitbit-export --add-user --output {output_dir}")
+      Bash("cd {plugin_dir} && .venv/bin/fitbit-export add-user")
       users = DISCOVER_USERS()
 
   RETURN users
 
 
 DISCOVER_USERS():
-  result = Bash("cd {plugin_dir} && .venv/bin/fitbit-export --list-users")
+  result = Bash("cd {plugin_dir} && .venv/bin/fitbit-export list-users")
   PARSE user_id and display_name from output
   RETURN users
 ```
@@ -193,7 +193,7 @@ EXTRACT(plugin_dir, output_dir, users):
 
     # Run the export
     result = Bash(
-      "cd {plugin_dir} && .venv/bin/fitbit-export --user {user.user_id} --output {output_dir}",
+      "cd {plugin_dir} && .venv/bin/fitbit-export export --user {user.user_id} --output {output_dir}",
       timeout: 600000  # 10 minutes max per run
     )
 
