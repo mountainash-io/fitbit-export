@@ -1,46 +1,31 @@
 # fitbit-export — Codex Installation
 
-## Plugin install (recommended)
+## Install from registry
+
+Open `/plugins` in Codex, search for **fitbit-export**, and install it.
+
+## Install from GitHub
+
+Register the repo as a marketplace source:
 
 ```bash
-git clone https://github.com/mountainash-io/fitbit-export.git ~/fitbit-export
-mkdir -p ~/.agents/plugins
-ln -s ~/fitbit-export ~/.agents/plugins/fitbit-export
+codex plugin marketplace add mountainash-io/fitbit-export
 ```
 
-Codex discovers the plugin via `.codex-plugin/plugin.json` and exposes the `fitbit-export` skill.
+Then open `/plugins` in Codex and install `fitbit-export`.
 
-## Skill-only install (alternative)
-
-If you only want the skill without plugin metadata:
+## Install from local clone
 
 ```bash
-git clone https://github.com/mountainash-io/fitbit-export.git ~/fitbit-export
-mkdir -p ~/.agents/skills
-ln -s ~/fitbit-export/skills/fitbit-export ~/.agents/skills/fitbit-export
+codex plugin marketplace add /path/to/fitbit-export
 ```
 
-## Tool mapping
-
-The skill references Claude Code tool names. Codex equivalents:
-
-| Skill references | Codex equivalent |
-|-----------------|------------------|
-| `Bash(command)` | `shell(command)` |
-| `Read(path)` | `read_file(path)` |
-| `AskUserQuestion(...)` | Ask the user directly in conversation |
+Then open `/plugins` in Codex and install `fitbit-export`.
 
 ## Verify
 
-After installation, restart Codex and confirm:
+Start a new Codex session and check one of:
 
-```
-> What skills do you have for Fitbit?
-```
-
-## Quick Reference
-
-- **Language:** Python 3.11+
-- **Dependencies:** httpx only (install with `uv pip install -e ~/fitbit-export`)
-- **Auth:** OAuth2 + PKCE, opens browser for Fitbit login
-- **Output:** `fitbit-export-output/{userId}-{name}/raw/`
+- `/plugins` shows `fitbit-export` as installed
+- `~/.codex/config.toml` contains both the marketplace entry and the enabled plugin entry
+- the `/fitbit-export` skill resolves in a fresh session
