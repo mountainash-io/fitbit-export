@@ -29,3 +29,4 @@ def test_help() -> None:
     assert "add-user" in result.output
     assert "list-users" in result.output
     assert "status" in result.output
+    assert "refresh" in result.output

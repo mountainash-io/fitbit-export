@@ -212,3 +212,15 @@ def config(
             console.print(f"  [dim](set via config)[/dim]")
         else:
             console.print(f"  [dim](default)[/dim]")
+
+
+@app.command()
+def refresh(
+    user: Optional[str] = typer.Option(None, help="Refresh specific user (Fitbit ID)"),
+) -> None:
+    """Refresh OAuth tokens via browser re-authentication."""
+    token_dir = _get_token_dir()
+    auth = FitbitAuth(token_dir=token_dir)
+    result = auth.refresh_user(expected_user_id=user)
+    if result:
+        result.client.close()
