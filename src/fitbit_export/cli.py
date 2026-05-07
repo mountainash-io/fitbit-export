@@ -87,7 +87,9 @@ def _run_export(
 
         console.print(f"\n  Done in {result.duration_seconds:.1f}s")
         rl = extractor.rate_limit
-        console.print(f"  API calls remaining: {rl.remaining}/{rl.limit} (resets in {rl.reset_seconds}s)")
+        mins, secs = divmod(rl.reset_seconds, 60)
+        reset_str = f"{mins}m {secs}s" if mins else f"{secs}s"
+        console.print(f"  API calls remaining: {rl.remaining}/{rl.limit} (resets in {reset_str})")
         if result.failed:
             for dtype, err in result.failed.items():
                 console.print(f"  [red]✗ {dtype}: {err}[/red]")
@@ -99,13 +101,35 @@ def _run_export(
 
 @app.command()
 def export(
+    all_types: bool = typer.Option(False, "--all", help="Export all data types"),
     user: Optional[str] = typer.Option(None, help="Export specific user (Fitbit ID)"),
     start: str = typer.Option("2010-01-01", help="Start date (YYYY-MM-DD)"),
     end: str = typer.Option(date.today().isoformat(), help="End date (YYYY-MM-DD)"),
     output: Optional[Path] = typer.Option(None, help="Output directory (default: ~/fitbit-export-output)"),
-    types: Optional[str] = typer.Option(None, help=f"Comma-separated types: {','.join(DATA_TYPES)}"),
+    types: Optional[str] = typer.Option(None, help="Comma-separated types to export (see list below)"),
 ) -> None:
-    """Run the Fitbit data export."""
+    """Run the Fitbit data export.
+
+    You must specify either --all or --types. Available types:
+
+    spo2, breathing_rate, skin_temperature, hrv, weight, sleep,
+    heart_rate_summary, nutrition, activities, activity_tcx,
+    daily_summary, heart_rate_intraday
+    """
+    if not all_types and not types:
+        console.print("[bold]fitbit-export export[/bold] — specify what to export:\n")
+        console.print("  [bold]--all[/bold]              Export all data types")
+        console.print("  [bold]--types[/bold] TYPE,...    Export specific types\n")
+        console.print("[dim]Available types:[/dim]")
+        for dtype in DATA_TYPES:
+            console.print(f"  {dtype}")
+        console.print()
+        console.print("[dim]Examples:[/dim]")
+        console.print("  fitbit-export export --all")
+        console.print("  fitbit-export export --types spo2,weight,sleep")
+        console.print("  fitbit-export export --types heart_rate_intraday --user ABC123")
+        raise typer.Exit(0)
+
     token_dir = _get_token_dir()
     output_dir = _get_output_dir(output)
     auth = FitbitAuth(token_dir=token_dir)
