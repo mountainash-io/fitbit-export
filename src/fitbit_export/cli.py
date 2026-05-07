@@ -95,6 +95,26 @@ def _run_export(
         user.client.close()
 
 
+def _execute_action(action: str, token_dir: Path, output_dir: Path) -> None:
+    auth = FitbitAuth(token_dir=token_dir)
+    if action == "add-user":
+        auth.add_user()
+    elif action == "refresh":
+        auth.refresh_user()
+    elif action == "config":
+        new_dir = console.input("  New export directory: ").strip()
+        if new_dir:
+            cfg = load_config()
+            cfg["output_dir"] = str(Path(new_dir).expanduser().resolve())
+            save_config(cfg)
+            console.print(f"[green]Output directory set to:[/green] {cfg['output_dir']}")
+    elif action == "export-all":
+        _run_export(auth, output_dir, None, date(2010, 1, 1), date.today(), None)
+    elif action.startswith("export-"):
+        user_id = action.removeprefix("export-")
+        _run_export(auth, output_dir, user_id, date(2010, 1, 1), date.today(), None)
+
+
 @app.callback()
 def main(ctx: typer.Context) -> None:
     if ctx.invoked_subcommand is not None:
@@ -102,41 +122,41 @@ def main(ctx: typer.Context) -> None:
 
     token_dir = _get_token_dir()
     output_dir = _get_output_dir(None)
-    data = gather_dashboard_data(token_dir=token_dir, output_dir=output_dir)
-    render_dashboard(data, output_dir, token_dir=token_dir)
 
-    if not data.users:
-        if typer.confirm("Add your first Fitbit account now?", default=True):
-            auth = FitbitAuth(token_dir=token_dir)
-            auth.add_user()
-            console.print()
-            if typer.confirm("Start exporting now?", default=True):
-                _run_export(auth, output_dir, None, date(2010, 1, 1), date.today(), None)
-        return
+    try:
+        while True:
+            output_dir = _get_output_dir(None)
+            data = gather_dashboard_data(token_dir=token_dir, output_dir=output_dir)
+            render_dashboard(data, output_dir, token_dir=token_dir)
 
-    all_complete = all(len(u.completed) >= len(DATA_TYPES) for u in data.users)
-    if all_complete:
-        console.print("[green bold]All exports complete![/green bold]")
-        console.print()
-        if typer.confirm("Add another Fitbit account?", default=False):
-            auth = FitbitAuth(token_dir=token_dir)
-            auth.add_user()
-        return
+            if not data.users:
+                if typer.confirm("Add your first Fitbit account now?", default=True):
+                    auth = FitbitAuth(token_dir=token_dir)
+                    try:
+                        auth.add_user()
+                    except KeyboardInterrupt:
+                        console.print("\n[yellow]Interrupted — returning to dashboard[/yellow]")
+                    continue
+                else:
+                    break
 
-    action = render_action_menu(data)
+            all_complete = all(len(u.completed) >= len(DATA_TYPES) for u in data.users)
+            if all_complete:
+                console.print("[green bold]All exports complete![/green bold]")
 
-    if action == "quit":
-        return
-    elif action == "add-user":
-        auth = FitbitAuth(token_dir=token_dir)
-        auth.add_user()
-    elif action == "export-all":
-        auth = FitbitAuth(token_dir=token_dir)
-        _run_export(auth, output_dir, None, date(2010, 1, 1), date.today(), None)
-    elif action.startswith("export-"):
-        user_id = action.removeprefix("export-")
-        auth = FitbitAuth(token_dir=token_dir)
-        _run_export(auth, output_dir, user_id, date(2010, 1, 1), date.today(), None)
+            action = render_action_menu(data)
+
+            if action == "quit":
+                break
+
+            try:
+                _execute_action(action, token_dir, output_dir)
+            except KeyboardInterrupt:
+                console.print("\n[yellow]Interrupted — returning to dashboard[/yellow]")
+                continue
+
+    except KeyboardInterrupt:
+        console.print("\n[dim]Goodbye[/dim]")
 
 
 @app.command()
