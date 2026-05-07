@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-05-07
+
+### Changed
+
+- Each data type now outputs to its own directory: `raw/{type}/{type}_{start}_{end}.json`
+- heart_rate_intraday writes one file per day instead of appending to year files
+- `fitbit-export export` now requires `--all` or `--types` (shows usage if neither given)
+- Rate limit reset time displayed as minutes and seconds
+- LLM skill moved to separate repo (mountainash-io/fitbit-export-skill)
+
+### Added
+
+- Date-range-aware checkpoint: overlapping or different ranges trigger re-fetch correctly
+- Backwards-compatible loading of old checkpoint format
+
+### Fixed
+
+- Multiple runs with different date ranges no longer overwrite previous exports
+- heart_rate_intraday no longer duplicates entries on re-run
+- Ctrl-C during export properly cleans up Rich progress display
+
+### Removed
+
+- Interactive FSM mode (`-i` flag) — bare CLI subcommands are sufficient
+- Plugin manifests and skill files (moved to fitbit-export-skill repo)
+
 ## [0.2.0] - 2026-05-07
 
 ### Changed
@@ -40,5 +66,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cross-platform plugin packaging: Cursor, Gemini CLI, Codex
 - Platform install docs (INSTALL.md) with marketplace/registry commands
 
+[0.3.0]: https://github.com/mountainash-io/fitbit-export/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/mountainash-io/fitbit-export/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mountainash-io/fitbit-export/releases/tag/v0.1.0
