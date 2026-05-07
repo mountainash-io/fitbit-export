@@ -148,6 +148,8 @@ def render_action_menu(data: DashboardData) -> str:
             options.append((f"export-{user.user_id}", f"Export {user.display_name} ({user.user_id})"))
 
     options.append(("add-user", "Add another user"))
+    options.append(("refresh", "Refresh tokens"))
+    options.append(("config", "Change export directory"))
     options.append(("quit", "Quit"))
 
     console.print("[bold]What would you like to do?[/bold]")
@@ -169,6 +171,7 @@ def render_action_menu(data: DashboardData) -> str:
             console.print("    fitbit-export list-users     List accounts")
             console.print("    fitbit-export status         Show this dashboard")
             console.print("    fitbit-export config         View/set config")
+            console.print("    fitbit-export refresh        Refresh account tokens")
             console.print()
             for i, (_, label) in enumerate(options, 1):
                 console.print(f"  [{i}] {label}")
