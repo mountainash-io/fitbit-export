@@ -171,14 +171,28 @@ def add_user() -> None:
 def list_users() -> None:
     """List authenticated Fitbit accounts."""
     token_dir = _get_token_dir()
+    output_dir = _get_output_dir(None)
     auth = FitbitAuth(token_dir=token_dir)
     users = auth.list_users()
     if not users:
         console.print("[yellow]No authenticated users.[/yellow]")
         console.print("Run [bold]fitbit-export add-user[/bold] to connect an account.")
         return
+
+    data = gather_dashboard_data(token_dir=token_dir, output_dir=output_dir)
+    status_map = {u.user_id: u for u in data.users}
+    total = len(DATA_TYPES)
+
     for u in users:
-        console.print(f"  {u['display_name']} ({u['user_id']})")
+        user_id = u["user_id"]
+        name = u["display_name"]
+        st = status_map.get(user_id)
+        if st and st.has_checkpoint:
+            done = len(st.completed)
+            check = " ✓" if done == total else ""
+            console.print(f"  {name} ({user_id})  {done}/{total}{check}")
+        else:
+            console.print(f"  {name} ({user_id})")
 
 
 @app.command()
