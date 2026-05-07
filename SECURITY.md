@@ -10,7 +10,7 @@ fitbit-export runs locally on your machine. It authenticates with the Fitbit API
 
 If you discover a security vulnerability, please report it responsibly:
 
-**Email:** <nathaniel.ramm@discretedatascience.com>
+**GitHub:** @discreteds
 
 Please include:
 
