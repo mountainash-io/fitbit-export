@@ -7,3 +7,4 @@ build/
 .env
 .pytest_cache/
 data/
+fitbit-export-output/
