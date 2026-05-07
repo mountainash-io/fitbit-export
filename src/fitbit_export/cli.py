@@ -54,7 +54,12 @@ def _run_export(
     types: str | None,
 ) -> None:
     if user_id:
-        users = [auth.authenticate(user_id)]
+        try:
+            users = [auth.authenticate(user_id)]
+        except ValueError:
+            console.print(f"[red]No authenticated account with ID '{user_id}'.[/red]")
+            console.print("Run [bold]fitbit-export list-users[/bold] to see available accounts.")
+            raise typer.Exit(1)
     else:
         users = auth.authenticate_all()
 
@@ -104,11 +109,18 @@ def main(ctx: typer.Context) -> None:
         if typer.confirm("Add your first Fitbit account now?", default=True):
             auth = FitbitAuth(token_dir=token_dir)
             auth.add_user()
+            console.print()
+            if typer.confirm("Start exporting now?", default=True):
+                _run_export(auth, output_dir, None, date(2010, 1, 1), date.today(), None)
         return
 
     all_complete = all(len(u.completed) >= len(DATA_TYPES) for u in data.users)
     if all_complete:
         console.print("[green bold]All exports complete![/green bold]")
+        console.print()
+        if typer.confirm("Add another Fitbit account?", default=False):
+            auth = FitbitAuth(token_dir=token_dir)
+            auth.add_user()
         return
 
     action = render_action_menu(data)
@@ -148,6 +160,11 @@ def add_user() -> None:
     token_dir = _get_token_dir()
     auth = FitbitAuth(token_dir=token_dir)
     auth.add_user()
+    console.print()
+    console.print("Next steps:")
+    console.print("  [bold]fitbit-export export[/bold]    — start exporting")
+    console.print("  [bold]fitbit-export add-user[/bold]  — add another account")
+    console.print("  [bold]fitbit-export[/bold]           — show dashboard")
 
 
 @app.command()

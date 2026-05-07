@@ -15,6 +15,7 @@ from fitbit_export.io import write_json_atomic, load_checkpoint, save_checkpoint
 def _request_with_retry(
     client: httpx.Client, path: str, params: dict,
     max_retries: int = 5, backoff_base: float = 30.0, timeout: float = 30.0,
+    on_retry: Callable[[int], None] | None = None,
 ) -> httpx.Response:
     for attempt in range(max_retries + 1):
         resp = client.get(path, params=params, timeout=timeout)
@@ -28,7 +29,8 @@ def _request_with_retry(
                 wait = float(retry_after)
             else:
                 wait = backoff_base * (2 ** attempt)
-            print(f"    Rate limited — waiting {int(wait)}s before retry...")
+            if on_retry:
+                on_retry(int(wait))
             time.sleep(wait)
             continue
         resp.raise_for_status()
@@ -134,11 +136,22 @@ def _fetch_heart_rate_intraday(
     part_dir = output_dir / "raw" / "heart_rate_intraday"
     results: list[dict] = []
     current = start
+    def _on_retry(wait_seconds: int) -> None:
+        if on_progress:
+            on_progress(ProgressEvent(
+                data_type="heart_rate_intraday",
+                status="rate_limited",
+                current_date=current,
+                pct=None,
+                message=f"waiting {wait_seconds}s...",
+            ))
+
     while current <= end:
         resp = _request_with_retry(
             client,
             f"/1/user/-/activities/heart/date/{current.isoformat()}/1d/1min.json",
             {},
+            on_retry=_on_retry,
         )
         data = resp.json()
         intraday = data.get("activities-heart-intraday", {})
