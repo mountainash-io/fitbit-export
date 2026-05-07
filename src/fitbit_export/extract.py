@@ -66,7 +66,7 @@ def _fetch_chunked(
     client: httpx.Client, path_template: str,
     start: date, end: date, max_range_days: int, response_key: str,
     dtype: str = "", on_progress: Callable[[ProgressEvent], None] | None = None,
-    output_path: Path | None = None,
+    output_dir: Path | None = None,
 ) -> list[dict]:
     results: list[dict] = []
     current = start
@@ -84,12 +84,16 @@ def _fetch_chunked(
         resp = _request_with_retry(client, path, {})
         data = resp.json()
         items = data.get(response_key, [])
+        chunk_items: list[dict] = []
         if isinstance(items, list):
+            chunk_items = items
             results.extend(items)
         else:
+            chunk_items = [data]
             results.append(data)
-        if output_path:
-            write_json_atomic(results, output_path)
+        if output_dir:
+            chunk_file = output_dir / f"{dtype}_{current.isoformat()}_{chunk_end.isoformat()}.json"
+            write_json_atomic(chunk_items, chunk_file)
         current = chunk_end + timedelta(days=1)
     return results
 
@@ -97,7 +101,7 @@ def _fetch_chunked(
 def _fetch_activities(
     client: httpx.Client, start: date, end: date,
     on_progress: Callable[[ProgressEvent], None] | None = None,
-    output_path: Path | None = None,
+    output_dir: Path | None = None,
 ) -> list[dict]:
     results: list[dict] = []
     offset = 0
@@ -122,14 +126,16 @@ def _fetch_activities(
             if start_str:
                 activity_date = datetime.fromisoformat(start_str).date()
                 if activity_date > end:
+                    if output_dir:
+                        write_json_atomic(results, output_dir / f"activities_{start.isoformat()}_{end.isoformat()}.json")
                     return results
             results.append(item)
-        if output_path:
-            write_json_atomic(results, output_path)
         next_url = data.get("pagination", {}).get("next", "")
         if not next_url:
             break
         offset += limit
+    if output_dir:
+        write_json_atomic(results, output_dir / f"activities_{start.isoformat()}_{end.isoformat()}.json")
     return results
 
 
@@ -183,12 +189,12 @@ def _fetch_activity_tcx(
     return downloaded
 
 
-def _fetch_sleep(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_path: Path | None = None) -> list[dict]:
-    return _fetch_chunked(client, "/1.2/user/-/sleep/date/{start}/{end}.json", start, end, 100, "sleep", dtype="sleep", on_progress=on_progress, output_path=output_path)
+def _fetch_sleep(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_dir: Path | None = None) -> list[dict]:
+    return _fetch_chunked(client, "/1.2/user/-/sleep/date/{start}/{end}.json", start, end, 100, "sleep", dtype="sleep", on_progress=on_progress, output_dir=output_dir)
 
 
-def _fetch_heart_rate_summary(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_path: Path | None = None) -> list[dict]:
-    return _fetch_chunked(client, "/1/user/-/activities/heart/date/{start}/{end}.json", start, end, 365, "activities-heart", dtype="heart_rate_summary", on_progress=on_progress, output_path=output_path)
+def _fetch_heart_rate_summary(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_dir: Path | None = None) -> list[dict]:
+    return _fetch_chunked(client, "/1/user/-/activities/heart/date/{start}/{end}.json", start, end, 365, "activities-heart", dtype="heart_rate_summary", on_progress=on_progress, output_dir=output_dir)
 
 
 def _fetch_heart_rate_intraday(
@@ -246,34 +252,34 @@ def _fetch_heart_rate_intraday(
     return results
 
 
-def _fetch_hrv(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_path: Path | None = None) -> list[dict]:
-    return _fetch_chunked(client, "/1/user/-/hrv/date/{start}/{end}.json", start, end, 30, "hrv", dtype="hrv", on_progress=on_progress, output_path=output_path)
+def _fetch_hrv(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_dir: Path | None = None) -> list[dict]:
+    return _fetch_chunked(client, "/1/user/-/hrv/date/{start}/{end}.json", start, end, 30, "hrv", dtype="hrv", on_progress=on_progress, output_dir=output_dir)
 
 
-def _fetch_spo2(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_path: Path | None = None) -> list[dict]:
+def _fetch_spo2(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_dir: Path | None = None) -> list[dict]:
     if on_progress:
         on_progress(ProgressEvent(data_type="spo2", status="progress", current_date=None, pct=None, message="fetching..."))
     resp = _request_with_retry(client, f"/1/user/-/spo2/date/{start.isoformat()}/{end.isoformat()}.json", {})
     data = resp.json()
     results = data if isinstance(data, list) else ([data] if data else [])
-    if output_path:
-        write_json_atomic(results, output_path)
+    if output_dir:
+        write_json_atomic(results, output_dir / f"spo2_{start.isoformat()}_{end.isoformat()}.json")
     return results
 
 
-def _fetch_breathing_rate(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_path: Path | None = None) -> list[dict]:
-    return _fetch_chunked(client, "/1/user/-/br/date/{start}/{end}.json", start, end, 30, "br", dtype="breathing_rate", on_progress=on_progress, output_path=output_path)
+def _fetch_breathing_rate(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_dir: Path | None = None) -> list[dict]:
+    return _fetch_chunked(client, "/1/user/-/br/date/{start}/{end}.json", start, end, 30, "br", dtype="breathing_rate", on_progress=on_progress, output_dir=output_dir)
 
 
-def _fetch_skin_temperature(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_path: Path | None = None) -> list[dict]:
-    return _fetch_chunked(client, "/1/user/-/temp/skin/date/{start}/{end}.json", start, end, 30, "tempSkin", dtype="skin_temperature", on_progress=on_progress, output_path=output_path)
+def _fetch_skin_temperature(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_dir: Path | None = None) -> list[dict]:
+    return _fetch_chunked(client, "/1/user/-/temp/skin/date/{start}/{end}.json", start, end, 30, "tempSkin", dtype="skin_temperature", on_progress=on_progress, output_dir=output_dir)
 
 
-def _fetch_weight(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_path: Path | None = None) -> list[dict]:
-    return _fetch_chunked(client, "/1/user/-/body/log/weight/date/{start}/{end}.json", start, end, 30, "weight", dtype="weight", on_progress=on_progress, output_path=output_path)
+def _fetch_weight(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_dir: Path | None = None) -> list[dict]:
+    return _fetch_chunked(client, "/1/user/-/body/log/weight/date/{start}/{end}.json", start, end, 30, "weight", dtype="weight", on_progress=on_progress, output_dir=output_dir)
 
 
-def _fetch_daily_summary(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_path: Path | None = None) -> list[dict]:
+def _fetch_daily_summary(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_dir: Path | None = None) -> list[dict]:
     resources = ["steps", "calories", "distance", "floors", "minutesSedentary",
                  "minutesLightlyActive", "minutesFairlyActive", "minutesVeryActive"]
     by_date: dict[str, dict] = {}
@@ -301,8 +307,6 @@ def _fetch_daily_summary(client: httpx.Client, start: date, end: date, on_progre
                     by_date[d] = {"dateTime": d}
                 by_date[d][resource] = entry.get("value", "0")
             current = chunk_end + timedelta(days=1)
-        if output_path:
-            write_json_atomic([by_date[d] for d in sorted(by_date.keys())], output_path)
 
     if on_progress:
         on_progress(ProgressEvent(
@@ -327,12 +331,12 @@ def _fetch_daily_summary(client: httpx.Client, start: date, end: date, on_progre
         current = chunk_end + timedelta(days=1)
 
     result = [by_date[d] for d in sorted(by_date.keys())]
-    if output_path:
-        write_json_atomic(result, output_path)
+    if output_dir:
+        write_json_atomic(result, output_dir / f"daily_summary_{start.isoformat()}_{end.isoformat()}.json")
     return result
 
 
-def _fetch_nutrition(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_path: Path | None = None) -> list[dict]:
+def _fetch_nutrition(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None, output_dir: Path | None = None) -> list[dict]:
     by_date: dict[str, dict] = {}
     resources = ["caloriesIn", "water"]
     for ri, resource in enumerate(resources):
@@ -358,11 +362,9 @@ def _fetch_nutrition(client: httpx.Client, start: date, end: date, on_progress: 
                     by_date[d] = {"dateTime": d}
                 by_date[d][resource] = entry.get("value", "0")
             current = chunk_end + timedelta(days=1)
-        if output_path:
-            write_json_atomic([by_date[d] for d in sorted(by_date.keys())], output_path)
     result = [by_date[d] for d in sorted(by_date.keys())]
-    if output_path:
-        write_json_atomic(result, output_path)
+    if output_dir:
+        write_json_atomic(result, output_dir / f"nutrition_{start.isoformat()}_{end.isoformat()}.json")
     return result
 
 
@@ -471,8 +473,9 @@ class FitbitExtractor:
                     )
                 else:
                     fetch_fn = _FETCH_FUNCTIONS[dtype]
-                    out_file = raw_dir / f"{dtype}.json"
-                    items = fetch_fn(self._client, start, self._end, on_progress=self._on_progress, output_path=out_file)
+                    type_dir = raw_dir / dtype
+                    type_dir.mkdir(parents=True, exist_ok=True)
+                    items = fetch_fn(self._client, start, self._end, on_progress=self._on_progress, output_dir=type_dir)
 
                 record_counts[dtype] = len(items)
                 checkpoint.completed.append(dtype)
