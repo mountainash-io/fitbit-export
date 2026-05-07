@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fitbit-export"
-version = "0.2.0"
+version = "0.3.0"
 description = "Extract all your Fitbit data before the API shuts down (September 2026)"
 readme = "README.md"
 requires-python = ">=3.11"
