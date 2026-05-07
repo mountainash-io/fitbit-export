@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import time
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -228,16 +227,8 @@ def _fetch_heart_rate_intraday(
         if dataset:
             item = {"date": current.isoformat(), "response": data}
             results.append(item)
-            year = current.isoformat()[:4]
-            year_file = part_dir / f"{year}.json"
-            if year_file.exists():
-                existing = json.loads(year_file.read_text(encoding="utf-8"))
-                existing_dates = {e["date"] for e in existing}
-                if current.isoformat() not in existing_dates:
-                    existing.append(item)
-            else:
-                existing = [item]
-            write_json_atomic(existing, year_file)
+            day_file = part_dir / f"heart_rate_intraday_{current.isoformat()}.json"
+            write_json_atomic(item, day_file)
         checkpoint.in_progress["heart_rate_intraday"] = {"last_completed_date": current.isoformat()}
         save_checkpoint(checkpoint, cp_path)
         if on_progress:
