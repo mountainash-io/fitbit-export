@@ -60,7 +60,11 @@ def gather_dashboard_data(
             cp_path = cp_candidates[0]
             try:
                 cp_data = json.loads(cp_path.read_text(encoding="utf-8"))
-                status.completed = cp_data.get("completed", [])
+                raw_completed = cp_data.get("completed", [])
+                if isinstance(raw_completed, dict):
+                    status.completed = list(raw_completed.keys())
+                else:
+                    status.completed = raw_completed
                 status.in_progress = cp_data.get("in_progress", {})
                 status.has_checkpoint = True
                 stat = cp_path.stat()
