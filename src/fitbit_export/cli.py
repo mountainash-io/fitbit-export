@@ -22,9 +22,9 @@ from fitbit_export.io import load_config, save_config
 console = Console()
 app = typer.Typer(
     name="fitbit-export",
-    help="Extract all your Fitbit data before the API shuts down (September 2026).",
+    help="Extract all your Fitbit data before the API shuts down (September 2026). Use -i for interactive mode.",
     invoke_without_command=True,
-    no_args_is_help=False,
+    no_args_is_help=True,
 )
 
 
@@ -115,9 +115,14 @@ def _execute_action(action: str, token_dir: Path, output_dir: Path) -> None:
         _run_export(auth, output_dir, user_id, date(2010, 1, 1), date.today(), None)
 
 
-@app.callback()
-def main(ctx: typer.Context) -> None:
+@app.callback(invoke_without_command=True)
+def main(
+    ctx: typer.Context,
+    interactive: bool = typer.Option(False, "-i", "--interactive", help="Interactive dashboard mode"),
+) -> None:
     if ctx.invoked_subcommand is not None:
+        return
+    if not interactive:
         return
 
     token_dir = _get_token_dir()
