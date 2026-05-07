@@ -187,11 +187,24 @@ class FitbitAuth:
         self._token_dir = token_dir
 
     def add_user(self) -> AuthenticatedUser:
+        existing = self.list_users()
+        if existing:
+            print("To add a different Fitbit account, make sure you are logged")
+            print("out of fitbit.com in your browser first (or use a private window).")
+            print("Otherwise this will just re-authenticate the currently logged-in user.")
+            print()
+
         tokens = _run_oauth_flow(self._client_id)
         client = _make_client(tokens["access_token"])
         user_id, display_name = _fetch_profile(client)
         _save_tokens(self._token_dir, user_id, display_name, tokens)
-        print(f"Authenticated: {display_name} ({user_id})")
+
+        was_existing = any(u["user_id"] == user_id for u in existing) if existing else False
+        if was_existing:
+            print(f"Re-authenticated: {display_name} ({user_id}) — tokens refreshed.")
+        else:
+            print(f"Added new account: {display_name} ({user_id})")
+
         return AuthenticatedUser(user_id=user_id, display_name=display_name, client=client)
 
     def authenticate(self, user_id: str) -> AuthenticatedUser:
