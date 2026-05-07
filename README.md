@@ -56,7 +56,7 @@ See [fitbit-export-skill](https://github.com/mountainash-io/fitbit-export-skill)
 fitbit-export --help         Show all commands and options
 fitbit-export export --all   Export all data types
 fitbit-export export --types spo2,weight,sleep
-fitbit-export add-user       Add a new Fitbit account (opens browser)
+fitbit-export add-user       Add a Fitbit account (you must be logged in at fitbit.com)
 fitbit-export list-users     List authenticated accounts with progress
 fitbit-export status         Show export progress dashboard
 fitbit-export config         View or set configuration
@@ -79,8 +79,8 @@ fitbit-export export [OPTIONS]
 ## Multiple Users (Family Accounts)
 
 ```bash
-fitbit-export add-user       # First user — opens browser
-fitbit-export add-user       # Log out of fitbit.com, then add another
+fitbit-export add-user       # Log into fitbit.com first, then run this
+fitbit-export add-user       # To add another user: log out of fitbit.com, log in as them, run again
 fitbit-export list-users     # List all authenticated users
 fitbit-export export --all   # Export all users
 fitbit-export export --all --user 26CBRV  # Export specific user
