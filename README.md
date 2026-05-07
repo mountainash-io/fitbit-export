@@ -98,24 +98,36 @@ Fitbit allows 150 API requests per hour. Intraday heart rate is the largest data
 ~/fitbit-export-output/
 └── 26CBRV-nathaniel/
     ├── raw/
-    │   ├── activities.json
+    │   ├── sleep/
+    │   │   └── sleep_2010-01-01_2010-04-10.json
+    │   ├── activities/
+    │   │   └── activities_2010-01-01_2026-05-07.json
     │   ├── activity_tcx/
     │   │   ├── 12345.tcx
     │   │   └── ...
-    │   ├── sleep.json
-    │   ├── heart_rate_summary.json
+    │   ├── heart_rate_summary/
+    │   │   └── heart_rate_summary_2010-01-01_2010-12-31.json
     │   ├── heart_rate_intraday/
     │   │   ├── 2013.json
     │   │   └── ...
-    │   ├── hrv.json
-    │   ├── spo2.json
-    │   ├── breathing_rate.json
-    │   ├── skin_temperature.json
-    │   ├── weight.json
-    │   ├── daily_summary.json
-    │   └── nutrition.json
+    │   ├── weight/
+    │   │   └── weight_2010-01-01_2010-01-30.json
+    │   ├── daily_summary/
+    │   │   └── daily_summary_2010-01-01_2026-05-07.json
+    │   ├── nutrition/
+    │   │   └── nutrition_2010-01-01_2026-05-07.json
+    │   ├── hrv/
+    │   │   └── hrv_2010-01-01_2010-01-30.json
+    │   ├── spo2/
+    │   │   └── spo2_2010-01-01_2026-05-07.json
+    │   ├── breathing_rate/
+    │   │   └── breathing_rate_2010-01-01_2010-01-30.json
+    │   └── skin_temperature/
+    │       └── skin_temperature_2010-01-01_2010-01-30.json
     └── .checkpoint.json
 ```
+
+Each data type gets its own directory. Files are named `{type}_{start}_{end}.json` so they are self-describing and multiple runs with different date ranges produce separate files rather than overwriting.
 
 ## Requirements
 
