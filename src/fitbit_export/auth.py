@@ -207,6 +207,41 @@ class FitbitAuth:
 
         return AuthenticatedUser(user_id=user_id, display_name=display_name, client=client)
 
+    def refresh_user(self, expected_user_id: str | None = None) -> AuthenticatedUser | None:
+        existing = self.list_users()
+        existing_ids = {u["user_id"] for u in existing}
+
+        if expected_user_id:
+            match = next((u for u in existing if u["user_id"] == expected_user_id), None)
+            if match:
+                print(f"Make sure you are logged into fitbit.com as {match['display_name']} before continuing.")
+            else:
+                print(f"No account with ID {expected_user_id} found.")
+                return None
+        else:
+            print("This will refresh tokens for whichever Fitbit account is logged into your browser.")
+        print()
+
+        tokens = _run_oauth_flow(self._client_id)
+        client = _make_client(tokens["access_token"])
+        user_id, display_name = _fetch_profile(client)
+
+        if expected_user_id and user_id != expected_user_id:
+            expected_name = next((u["display_name"] for u in existing if u["user_id"] == expected_user_id), expected_user_id)
+            print(f"Expected {expected_name} ({expected_user_id}) but browser authenticated as {display_name} ({user_id}).")
+            print("Log out of fitbit.com and log in as the correct account.")
+            client.close()
+            return None
+
+        if user_id not in existing_ids:
+            print(f"This account ({display_name}) isn't registered yet. Use `fitbit-export add-user` instead.")
+            client.close()
+            return None
+
+        _save_tokens(self._token_dir, user_id, display_name, tokens)
+        print(f"Tokens refreshed for {display_name} ({user_id})")
+        return AuthenticatedUser(user_id=user_id, display_name=display_name, client=client)
+
     def authenticate(self, user_id: str) -> AuthenticatedUser:
         path = _token_path(self._token_dir, user_id)
         tokens = _load_tokens(path)
