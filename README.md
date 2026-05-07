@@ -14,7 +14,7 @@ Google is phasing out Fitbit accounts and the legacy Fitbit Web API:
 
 ```bash
 # Install and run (requires uv)
-uvx --from git+https://github.com/mountainash-io/fitbit-export fitbit-export --help
+uvx git+https://github.com/mountainash-io/fitbit-export --help
 
 # Or clone and install locally
 git clone https://github.com/mountainash-io/fitbit-export.git
@@ -122,6 +122,7 @@ Fitbit allows 150 API requests per hour. Intraday heart rate is the largest data
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/) (recommended) or pip
 - A Fitbit account with data
+- **Port 8080 available locally** — the OAuth callback runs a temporary local server on `localhost:8080` during authentication. This means the tool must run on a machine with a browser and local network access (not in a remote/cloud sandbox).
 
 ## License
 
