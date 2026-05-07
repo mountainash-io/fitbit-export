@@ -1,3 +1,3 @@
-from fitbit_export.cli import main
+from fitbit_export.cli import app
 
-main()
+app()

@@ -24,6 +24,13 @@ class ExtractResult:
 
 
 @dataclass
+class RateLimit:
+    remaining: int = 150
+    limit: int = 150
+    reset_seconds: int = 3600
+
+
+@dataclass
 class Checkpoint:
     version: int
     started_at: datetime
