@@ -137,54 +137,6 @@ def render_dashboard(data: DashboardData, output_dir: Path, token_dir: Path | No
         console.print()
 
 
-def render_action_menu(data: DashboardData) -> str:
-    options: list[tuple[str, str]] = []
-
-    incomplete = [u for u in data.users if len(u.completed) < len(DATA_TYPES)]
-    if incomplete:
-        if len(data.users) > 1:
-            options.append(("export-all", "Export all users"))
-        for user in incomplete:
-            options.append((f"export-{user.user_id}", f"Export {user.display_name} ({user.user_id})"))
-
-    options.append(("add-user", "Add another user"))
-    options.append(("refresh", "Refresh tokens"))
-    options.append(("config", "Change export directory"))
-    options.append(("quit", "Quit"))
-
-    console.print("[bold]What would you like to do?[/bold]")
-    for i, (_, label) in enumerate(options, 1):
-        console.print(f"  [{i}] {label}")
-    console.print()
-    console.print("[dim]Tip: run fitbit-export --help for all commands[/dim]")
-
-    while True:
-        choice = console.input("\n> ").strip()
-        if choice.lower() in ("q", "quit", "exit"):
-            return "quit"
-        if choice.lower() in ("h", "help", "?"):
-            console.print()
-            console.print("  [bold]Available commands:[/bold]")
-            console.print("    fitbit-export export         Run the data export")
-            console.print("    fitbit-export export --user X Export specific user")
-            console.print("    fitbit-export add-user       Add a Fitbit account")
-            console.print("    fitbit-export list-users     List accounts")
-            console.print("    fitbit-export status         Show this dashboard")
-            console.print("    fitbit-export config         View/set config")
-            console.print("    fitbit-export refresh        Refresh account tokens")
-            console.print()
-            for i, (_, label) in enumerate(options, 1):
-                console.print(f"  [{i}] {label}")
-            continue
-        try:
-            idx = int(choice) - 1
-            if 0 <= idx < len(options):
-                return options[idx][0]
-        except ValueError:
-            pass
-        console.print(f"[red]Enter a number 1-{len(options)}, 'h' for help, or 'q' to quit[/red]")
-
-
 class ProgressTracker:
     def __init__(self, data_types: list[str] | None = None) -> None:
         self._types = data_types or DATA_TYPES

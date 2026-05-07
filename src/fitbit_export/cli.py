@@ -13,7 +13,6 @@ from fitbit_export.display import (
     DEFAULT_OUTPUT_DIR,
     ProgressTracker,
     gather_dashboard_data,
-    render_action_menu,
     render_dashboard,
 )
 from fitbit_export.extract import DATA_TYPES, FitbitExtractor
@@ -22,8 +21,7 @@ from fitbit_export.io import load_config, save_config
 console = Console()
 app = typer.Typer(
     name="fitbit-export",
-    help="Extract all your Fitbit data before the API shuts down (September 2026). Use -i for interactive mode.",
-    invoke_without_command=True,
+    help="Extract all your Fitbit data before the API shuts down (September 2026).",
     no_args_is_help=True,
 )
 
@@ -74,15 +72,18 @@ def _run_export(
         tracker = ProgressTracker(data_types=data_types)
         tracker.start()
 
-        extractor = FitbitExtractor(
-            client=user.client,
-            output_dir=user_dir,
-            start=start,
-            end=end,
-            on_progress=tracker.on_progress,
-        )
-        result = extractor.run(data_types=data_types)
-        tracker.stop()
+        try:
+            extractor = FitbitExtractor(
+                client=user.client,
+                output_dir=user_dir,
+                start=start,
+                end=end,
+                on_progress=tracker.on_progress,
+            )
+            result = extractor.run(data_types=data_types)
+        finally:
+            tracker.stop()
+            user.client.close()
 
         console.print(f"\n  Done in {result.duration_seconds:.1f}s")
         rl = extractor.rate_limit
@@ -94,76 +95,6 @@ def _run_export(
             if rate_limited:
                 console.print("\n  [yellow]Rate limited — run again in ~1 hour to resume.[/yellow]")
         console.print()
-        user.client.close()
-
-
-def _execute_action(action: str, token_dir: Path, output_dir: Path) -> None:
-    auth = FitbitAuth(token_dir=token_dir)
-    if action == "add-user":
-        auth.add_user()
-    elif action == "refresh":
-        auth.refresh_user()
-    elif action == "config":
-        new_dir = console.input("  New export directory: ").strip()
-        if new_dir:
-            cfg = load_config()
-            cfg["output_dir"] = str(Path(new_dir).expanduser().resolve())
-            save_config(cfg)
-            console.print(f"[green]Output directory set to:[/green] {cfg['output_dir']}")
-    elif action == "export-all":
-        _run_export(auth, output_dir, None, date(2010, 1, 1), date.today(), None)
-    elif action.startswith("export-"):
-        user_id = action.removeprefix("export-")
-        _run_export(auth, output_dir, user_id, date(2010, 1, 1), date.today(), None)
-
-
-@app.callback(invoke_without_command=True)
-def main(
-    ctx: typer.Context,
-    interactive: bool = typer.Option(False, "-i", "--interactive", help="Interactive dashboard mode"),
-) -> None:
-    if ctx.invoked_subcommand is not None:
-        return
-    if not interactive:
-        return
-
-    token_dir = _get_token_dir()
-    output_dir = _get_output_dir(None)
-
-    try:
-        while True:
-            output_dir = _get_output_dir(None)
-            data = gather_dashboard_data(token_dir=token_dir, output_dir=output_dir)
-            render_dashboard(data, output_dir, token_dir=token_dir)
-
-            if not data.users:
-                if typer.confirm("Add your first Fitbit account now?", default=True):
-                    auth = FitbitAuth(token_dir=token_dir)
-                    try:
-                        auth.add_user()
-                    except KeyboardInterrupt:
-                        console.print("\n[yellow]Interrupted — returning to dashboard[/yellow]")
-                    continue
-                else:
-                    break
-
-            all_complete = all(len(u.completed) >= len(DATA_TYPES) for u in data.users)
-            if all_complete:
-                console.print("[green bold]All exports complete![/green bold]")
-
-            action = render_action_menu(data)
-
-            if action == "quit":
-                break
-
-            try:
-                _execute_action(action, token_dir, output_dir)
-            except KeyboardInterrupt:
-                console.print("\n[yellow]Interrupted — returning to dashboard[/yellow]")
-                continue
-
-    except KeyboardInterrupt:
-        console.print("\n[dim]Goodbye[/dim]")
 
 
 @app.command()
@@ -194,7 +125,7 @@ def add_user() -> None:
     console.print("Next steps:")
     console.print("  [bold]fitbit-export export[/bold]    — start exporting")
     console.print("  [bold]fitbit-export add-user[/bold]  — add another account")
-    console.print("  [bold]fitbit-export[/bold]           — show dashboard")
+    console.print("  [bold]fitbit-export status[/bold]    — show export status")
 
 
 @app.command()
