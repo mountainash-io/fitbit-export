@@ -24,6 +24,22 @@ def write_json_atomic(data: Any, path: Path) -> None:
         raise
 
 
+CONFIG_PATH = Path.home() / ".fitbit-export" / "config.json"
+
+
+def load_config(path: Path = CONFIG_PATH) -> dict:
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def save_config(data: dict, path: Path = CONFIG_PATH) -> None:
+    write_json_atomic(data, path)
+
+
 def load_checkpoint(path: Path) -> Checkpoint | None:
     if not path.exists():
         return None

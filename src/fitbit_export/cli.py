@@ -17,6 +17,7 @@ from fitbit_export.display import (
     render_dashboard,
 )
 from fitbit_export.extract import DATA_TYPES, FitbitExtractor
+from fitbit_export.io import load_config, save_config
 
 console = Console()
 app = typer.Typer(
@@ -36,7 +37,12 @@ def _get_output_dir(output: Path | None) -> Path:
     override = os.environ.get("FITBIT_OUTPUT_DIR")
     if override:
         return Path(override)
-    return output or DEFAULT_OUTPUT_DIR
+    if output:
+        return output
+    cfg = load_config()
+    if cfg.get("output_dir"):
+        return Path(cfg["output_dir"]).expanduser()
+    return DEFAULT_OUTPUT_DIR
 
 
 def _run_export(
@@ -92,7 +98,7 @@ def main(ctx: typer.Context) -> None:
     token_dir = _get_token_dir()
     output_dir = _get_output_dir(None)
     data = gather_dashboard_data(token_dir=token_dir, output_dir=output_dir)
-    render_dashboard(data, output_dir)
+    render_dashboard(data, output_dir, token_dir=token_dir)
 
     if not data.users:
         if typer.confirm("Add your first Fitbit account now?", default=True):
@@ -166,4 +172,26 @@ def status(
     token_dir = _get_token_dir()
     output_dir = _get_output_dir(output)
     data = gather_dashboard_data(token_dir=token_dir, output_dir=output_dir)
-    render_dashboard(data, output_dir)
+    render_dashboard(data, output_dir, token_dir=token_dir)
+
+
+@app.command()
+def config(
+    output: Optional[Path] = typer.Option(None, help="Set the default export output directory"),
+) -> None:
+    """View or set configuration."""
+    if output:
+        cfg = load_config()
+        cfg["output_dir"] = str(output.resolve())
+        save_config(cfg)
+        console.print(f"[green]Output directory set to:[/green] {output.resolve()}")
+    else:
+        token_dir = _get_token_dir()
+        output_dir = _get_output_dir(None)
+        console.print(f"  Tokens:  {token_dir}")
+        console.print(f"  Export:  {output_dir}")
+        cfg = load_config()
+        if cfg.get("output_dir"):
+            console.print(f"  [dim](set via config)[/dim]")
+        else:
+            console.print(f"  [dim](default)[/dim]")

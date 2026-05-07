@@ -73,11 +73,14 @@ def gather_dashboard_data(
     return DashboardData(users=users)
 
 
-def render_dashboard(data: DashboardData, output_dir: Path) -> None:
+def render_dashboard(data: DashboardData, output_dir: Path, token_dir: Path | None = None) -> None:
     console.print(Panel(
         "[bold]Fitbit Export[/bold]\nAPI shutdown: September 2026",
         expand=False,
     ))
+    if token_dir:
+        console.print(f"  Tokens:  [dim]{token_dir}[/dim]")
+    console.print(f"  Export:  [dim]{output_dir}[/dim]")
     console.print()
 
     if not data.users:
