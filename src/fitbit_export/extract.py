@@ -41,11 +41,20 @@ def _request_with_retry(
 def _fetch_chunked(
     client: httpx.Client, path_template: str,
     start: date, end: date, max_range_days: int, response_key: str,
+    dtype: str = "", on_progress: Callable[[ProgressEvent], None] | None = None,
 ) -> list[dict]:
     results: list[dict] = []
     current = start
+    total_days = (end - start).days + 1
     while current <= end:
         chunk_end = min(current + timedelta(days=max_range_days - 1), end)
+        if on_progress and dtype:
+            done_days = (current - start).days
+            on_progress(ProgressEvent(
+                data_type=dtype, status="progress",
+                current_date=current, pct=done_days / total_days if total_days > 0 else 0,
+                message=f"fetching {current} → {chunk_end}",
+            ))
         path = path_template.format(start=current.isoformat(), end=chunk_end.isoformat())
         resp = _request_with_retry(client, path, {})
         data = resp.json()
@@ -58,11 +67,20 @@ def _fetch_chunked(
     return results
 
 
-def _fetch_activities(client: httpx.Client, start: date, end: date) -> list[dict]:
+def _fetch_activities(
+    client: httpx.Client, start: date, end: date,
+    on_progress: Callable[[ProgressEvent], None] | None = None,
+) -> list[dict]:
     results: list[dict] = []
     offset = 0
     limit = 100
-    for _ in range(100):
+    for page in range(100):
+        if on_progress:
+            on_progress(ProgressEvent(
+                data_type="activities", status="progress",
+                current_date=None, pct=None,
+                message=f"page {page + 1} ({len(results)} so far)",
+            ))
         resp = _request_with_retry(
             client, "/1/user/-/activities/list.json",
             {"afterDate": start.isoformat(), "sort": "asc", "limit": limit, "offset": offset},
@@ -88,18 +106,33 @@ def _fetch_activities(client: httpx.Client, start: date, end: date) -> list[dict
 def _fetch_activity_tcx(
     client: httpx.Client, start: date, end: date,
     output_dir: Path, checkpoint: Checkpoint, cp_path: Path,
+    on_progress: Callable[[ProgressEvent], None] | None = None,
 ) -> list[dict]:
     tcx_dir = output_dir / "raw" / "activity_tcx"
     tcx_dir.mkdir(parents=True, exist_ok=True)
 
-    activities = _fetch_activities(client, start, end)
+    if on_progress:
+        on_progress(ProgressEvent(
+            data_type="activity_tcx", status="progress",
+            current_date=None, pct=None, message="listing activities...",
+        ))
+    activities = _fetch_activities(client, start, end, on_progress=None)
+    total = len(activities)
     downloaded = []
-    for activity in activities:
+    for i, activity in enumerate(activities):
         log_id = activity.get("logId")
         if not log_id:
             continue
         if activity.get("logType") == "auto_detected":
             continue
+
+        if on_progress:
+            on_progress(ProgressEvent(
+                data_type="activity_tcx", status="progress",
+                current_date=None,
+                pct=(i + 1) / total if total > 0 else 1.0,
+                message=f"downloading {i + 1}/{total}",
+            ))
 
         tcx_path = tcx_dir / f"{log_id}.tcx"
         if tcx_path.exists():
@@ -120,12 +153,12 @@ def _fetch_activity_tcx(
     return downloaded
 
 
-def _fetch_sleep(client: httpx.Client, start: date, end: date) -> list[dict]:
-    return _fetch_chunked(client, "/1.2/user/-/sleep/date/{start}/{end}.json", start, end, 100, "sleep")
+def _fetch_sleep(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None) -> list[dict]:
+    return _fetch_chunked(client, "/1.2/user/-/sleep/date/{start}/{end}.json", start, end, 100, "sleep", dtype="sleep", on_progress=on_progress)
 
 
-def _fetch_heart_rate_summary(client: httpx.Client, start: date, end: date) -> list[dict]:
-    return _fetch_chunked(client, "/1/user/-/activities/heart/date/{start}/{end}.json", start, end, 365, "activities-heart")
+def _fetch_heart_rate_summary(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None) -> list[dict]:
+    return _fetch_chunked(client, "/1/user/-/activities/heart/date/{start}/{end}.json", start, end, 365, "activities-heart", dtype="heart_rate_summary", on_progress=on_progress)
 
 
 def _fetch_heart_rate_intraday(
@@ -183,11 +216,13 @@ def _fetch_heart_rate_intraday(
     return results
 
 
-def _fetch_hrv(client: httpx.Client, start: date, end: date) -> list[dict]:
-    return _fetch_chunked(client, "/1/user/-/hrv/date/{start}/{end}.json", start, end, 30, "hrv")
+def _fetch_hrv(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None) -> list[dict]:
+    return _fetch_chunked(client, "/1/user/-/hrv/date/{start}/{end}.json", start, end, 30, "hrv", dtype="hrv", on_progress=on_progress)
 
 
-def _fetch_spo2(client: httpx.Client, start: date, end: date) -> list[dict]:
+def _fetch_spo2(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None) -> list[dict]:
+    if on_progress:
+        on_progress(ProgressEvent(data_type="spo2", status="progress", current_date=None, pct=None, message="fetching..."))
     resp = _request_with_retry(client, f"/1/user/-/spo2/date/{start.isoformat()}/{end.isoformat()}.json", {})
     data = resp.json()
     if isinstance(data, list):
@@ -195,23 +230,30 @@ def _fetch_spo2(client: httpx.Client, start: date, end: date) -> list[dict]:
     return [data] if data else []
 
 
-def _fetch_breathing_rate(client: httpx.Client, start: date, end: date) -> list[dict]:
-    return _fetch_chunked(client, "/1/user/-/br/date/{start}/{end}.json", start, end, 30, "br")
+def _fetch_breathing_rate(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None) -> list[dict]:
+    return _fetch_chunked(client, "/1/user/-/br/date/{start}/{end}.json", start, end, 30, "br", dtype="breathing_rate", on_progress=on_progress)
 
 
-def _fetch_skin_temperature(client: httpx.Client, start: date, end: date) -> list[dict]:
-    return _fetch_chunked(client, "/1/user/-/temp/skin/date/{start}/{end}.json", start, end, 30, "tempSkin")
+def _fetch_skin_temperature(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None) -> list[dict]:
+    return _fetch_chunked(client, "/1/user/-/temp/skin/date/{start}/{end}.json", start, end, 30, "tempSkin", dtype="skin_temperature", on_progress=on_progress)
 
 
-def _fetch_weight(client: httpx.Client, start: date, end: date) -> list[dict]:
-    return _fetch_chunked(client, "/1/user/-/body/log/weight/date/{start}/{end}.json", start, end, 30, "weight")
+def _fetch_weight(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None) -> list[dict]:
+    return _fetch_chunked(client, "/1/user/-/body/log/weight/date/{start}/{end}.json", start, end, 30, "weight", dtype="weight", on_progress=on_progress)
 
 
-def _fetch_daily_summary(client: httpx.Client, start: date, end: date) -> list[dict]:
+def _fetch_daily_summary(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None) -> list[dict]:
     resources = ["steps", "calories", "distance", "floors", "minutesSedentary",
                  "minutesLightlyActive", "minutesFairlyActive", "minutesVeryActive"]
     by_date: dict[str, dict] = {}
-    for resource in resources:
+    total_resources = len(resources) + 1
+    for ri, resource in enumerate(resources):
+        if on_progress:
+            on_progress(ProgressEvent(
+                data_type="daily_summary", status="progress",
+                current_date=None, pct=ri / total_resources,
+                message=f"fetching {resource}...",
+            ))
         current = start
         while current <= end:
             chunk_end = min(current + timedelta(days=1094), end)
@@ -229,6 +271,12 @@ def _fetch_daily_summary(client: httpx.Client, start: date, end: date) -> list[d
                 by_date[d][resource] = entry.get("value", "0")
             current = chunk_end + timedelta(days=1)
 
+    if on_progress:
+        on_progress(ProgressEvent(
+            data_type="daily_summary", status="progress",
+            current_date=None, pct=len(resources) / total_resources,
+            message="fetching activeZoneMinutes...",
+        ))
     current = start
     while current <= end:
         chunk_end = min(current + timedelta(days=1094), end)
@@ -248,9 +296,16 @@ def _fetch_daily_summary(client: httpx.Client, start: date, end: date) -> list[d
     return [by_date[d] for d in sorted(by_date.keys())]
 
 
-def _fetch_nutrition(client: httpx.Client, start: date, end: date) -> list[dict]:
+def _fetch_nutrition(client: httpx.Client, start: date, end: date, on_progress: Callable[[ProgressEvent], None] | None = None) -> list[dict]:
     by_date: dict[str, dict] = {}
-    for resource in ["caloriesIn", "water"]:
+    resources = ["caloriesIn", "water"]
+    for ri, resource in enumerate(resources):
+        if on_progress:
+            on_progress(ProgressEvent(
+                data_type="nutrition", status="progress",
+                current_date=None, pct=ri / len(resources),
+                message=f"fetching {resource}...",
+            ))
         current = start
         while current <= end:
             chunk_end = min(current + timedelta(days=1094), end)
@@ -364,10 +419,11 @@ class FitbitExtractor:
                     items = _fetch_activity_tcx(
                         self._client, start, self._end,
                         self._output_dir, checkpoint, cp_path,
+                        on_progress=self._on_progress,
                     )
                 else:
                     fetch_fn = _FETCH_FUNCTIONS[dtype]
-                    items = fetch_fn(self._client, start, self._end)
+                    items = fetch_fn(self._client, start, self._end, on_progress=self._on_progress)
                     write_json_atomic(items, raw_dir / f"{dtype}.json")
 
                 record_counts[dtype] = len(items)

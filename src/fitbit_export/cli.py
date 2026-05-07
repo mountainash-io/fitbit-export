@@ -176,7 +176,10 @@ def export(
     token_dir = _get_token_dir()
     output_dir = _get_output_dir(output)
     auth = FitbitAuth(token_dir=token_dir)
-    _run_export(auth, output_dir, user, date.fromisoformat(start), date.fromisoformat(end), types)
+    try:
+        _run_export(auth, output_dir, user, date.fromisoformat(start), date.fromisoformat(end), types)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Export interrupted. Progress is saved — run again to resume.[/yellow]")
 
 
 @app.command()
