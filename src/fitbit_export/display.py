@@ -153,16 +153,33 @@ def render_action_menu(data: DashboardData) -> str:
     console.print("[bold]What would you like to do?[/bold]")
     for i, (_, label) in enumerate(options, 1):
         console.print(f"  [{i}] {label}")
+    console.print()
+    console.print("[dim]Tip: run fitbit-export --help for all commands[/dim]")
 
     while True:
         choice = console.input("\n> ").strip()
+        if choice.lower() in ("q", "quit", "exit"):
+            return "quit"
+        if choice.lower() in ("h", "help", "?"):
+            console.print()
+            console.print("  [bold]Available commands:[/bold]")
+            console.print("    fitbit-export export         Run the data export")
+            console.print("    fitbit-export export --user X Export specific user")
+            console.print("    fitbit-export add-user       Add a Fitbit account")
+            console.print("    fitbit-export list-users     List accounts")
+            console.print("    fitbit-export status         Show this dashboard")
+            console.print("    fitbit-export config         View/set config")
+            console.print()
+            for i, (_, label) in enumerate(options, 1):
+                console.print(f"  [{i}] {label}")
+            continue
         try:
             idx = int(choice) - 1
             if 0 <= idx < len(options):
                 return options[idx][0]
         except ValueError:
             pass
-        console.print(f"[red]Please enter a number 1-{len(options)}[/red]")
+        console.print(f"[red]Enter a number 1-{len(options)}, 'h' for help, or 'q' to quit[/red]")
 
 
 class ProgressTracker:
