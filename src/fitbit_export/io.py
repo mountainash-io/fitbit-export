@@ -44,12 +44,17 @@ def load_checkpoint(path: Path) -> Checkpoint | None:
     if not path.exists():
         return None
     data = json.loads(path.read_text(encoding="utf-8"))
+    raw_completed = data.get("completed", {})
+    if isinstance(raw_completed, list):
+        completed = {dtype: {} for dtype in raw_completed}
+    else:
+        completed = raw_completed
     return Checkpoint(
         version=data["version"],
         started_at=datetime.fromisoformat(data["started_at"]),
         start_date=date.fromisoformat(data["start_date"]),
         end_date=date.fromisoformat(data["end_date"]),
-        completed=data.get("completed", []),
+        completed=completed,
         in_progress=data.get("in_progress", {}),
     )
 
