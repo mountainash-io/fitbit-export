@@ -85,6 +85,8 @@ def _run_export(
         tracker.stop()
 
         console.print(f"\n  Done in {result.duration_seconds:.1f}s")
+        rl = extractor.rate_limit
+        console.print(f"  API calls remaining: {rl.remaining}/{rl.limit} (resets in {rl.reset_seconds}s)")
         if result.failed:
             for dtype, err in result.failed.items():
                 console.print(f"  [red]✗ {dtype}: {err}[/red]")

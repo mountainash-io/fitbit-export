@@ -8,8 +8,31 @@ from typing import Any, Callable
 
 import httpx
 
-from fitbit_export.models import ProgressEvent, ExtractResult, Checkpoint
+from fitbit_export.models import ProgressEvent, ExtractResult, Checkpoint, RateLimit
 from fitbit_export.io import write_json_atomic, load_checkpoint, save_checkpoint
+
+
+def _update_rate_limit(resp: httpx.Response, rate_limit: RateLimit | None) -> None:
+    if rate_limit is None:
+        return
+    remaining = resp.headers.get("Fitbit-Rate-Limit-Remaining")
+    if remaining is not None:
+        try:
+            rate_limit.remaining = int(remaining)
+        except ValueError:
+            pass
+    limit = resp.headers.get("Fitbit-Rate-Limit-Limit")
+    if limit is not None:
+        try:
+            rate_limit.limit = int(limit)
+        except ValueError:
+            pass
+    reset = resp.headers.get("Fitbit-Rate-Limit-Reset")
+    if reset is not None:
+        try:
+            rate_limit.reset_seconds = int(reset)
+        except ValueError:
+            pass
 
 
 def _request_with_retry(
@@ -19,6 +42,7 @@ def _request_with_retry(
 ) -> httpx.Response:
     for attempt in range(max_retries + 1):
         resp = client.get(path, params=params, timeout=timeout)
+        _update_rate_limit(resp, _current_rate_limit)
         if resp.status_code == 429 or resp.status_code >= 500:
             if attempt >= max_retries:
                 raise RuntimeError(
@@ -345,6 +369,9 @@ _FETCH_FUNCTIONS: dict[str, Callable] = {
 }
 
 
+_current_rate_limit: RateLimit | None = None
+
+
 class FitbitExtractor:
     def __init__(
         self,
@@ -355,6 +382,7 @@ class FitbitExtractor:
         on_progress: Callable[[ProgressEvent], None] | None = None,
     ) -> None:
         self._client = client
+        self.rate_limit = RateLimit()
         self._output_dir = output_dir
         self._start = start
         self._end = end
@@ -370,6 +398,8 @@ class FitbitExtractor:
             ))
 
     def run(self, data_types: list[str] | None = None) -> ExtractResult:
+        global _current_rate_limit
+        _current_rate_limit = self.rate_limit
         t0 = time.monotonic()
         raw_dir = self._output_dir / "raw"
         raw_dir.mkdir(parents=True, exist_ok=True)
