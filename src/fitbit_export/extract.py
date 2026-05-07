@@ -232,9 +232,11 @@ def _fetch_heart_rate_intraday(
             year_file = part_dir / f"{year}.json"
             if year_file.exists():
                 existing = json.loads(year_file.read_text(encoding="utf-8"))
+                existing_dates = {e["date"] for e in existing}
+                if current.isoformat() not in existing_dates:
+                    existing.append(item)
             else:
-                existing = []
-            existing.append(item)
+                existing = [item]
             write_json_atomic(existing, year_file)
         checkpoint.in_progress["heart_rate_intraday"] = {"last_completed_date": current.isoformat()}
         save_checkpoint(checkpoint, cp_path)
@@ -439,9 +441,20 @@ class FitbitExtractor:
 
         for dtype in type_order:
             if dtype in checkpoint.completed:
-                self._emit(dtype, "skipped", message="Already completed")
-                completed.append(dtype)
-                continue
+                prev = checkpoint.completed[dtype]
+                prev_start = prev.get("start")
+                prev_end = prev.get("end")
+                if prev_start and prev_end:
+                    cp_start = date.fromisoformat(prev_start)
+                    cp_end = date.fromisoformat(prev_end)
+                    if cp_start <= self._start and cp_end >= self._end:
+                        self._emit(dtype, "skipped", message="Already completed")
+                        completed.append(dtype)
+                        continue
+                else:
+                    self._emit(dtype, "skipped", message="Already completed")
+                    completed.append(dtype)
+                    continue
 
             self._emit(dtype, "starting")
 
@@ -452,7 +465,10 @@ class FitbitExtractor:
                     if last:
                         start = date.fromisoformat(last) + timedelta(days=1)
                         if start > self._end:
-                            checkpoint.completed.append(dtype)
+                            checkpoint.completed[dtype] = {
+                                "start": self._start.isoformat(),
+                                "end": self._end.isoformat(),
+                            }
                             checkpoint.in_progress.pop(dtype, None)
                             save_checkpoint(checkpoint, cp_path)
                             self._emit(dtype, "complete", pct=1.0, message="Resumed — already done")
@@ -478,7 +494,10 @@ class FitbitExtractor:
                     items = fetch_fn(self._client, start, self._end, on_progress=self._on_progress, output_dir=type_dir)
 
                 record_counts[dtype] = len(items)
-                checkpoint.completed.append(dtype)
+                checkpoint.completed[dtype] = {
+                    "start": self._start.isoformat(),
+                    "end": self._end.isoformat(),
+                }
                 checkpoint.in_progress.pop(dtype, None)
                 save_checkpoint(checkpoint, cp_path)
                 self._emit(dtype, "complete", pct=1.0, message=f"{len(items)} records")

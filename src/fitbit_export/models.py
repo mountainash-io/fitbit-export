@@ -36,5 +36,5 @@ class Checkpoint:
     started_at: datetime
     start_date: date
     end_date: date
-    completed: list[str] = field(default_factory=list)
+    completed: dict[str, dict] = field(default_factory=dict)
     in_progress: dict[str, dict] = field(default_factory=dict)
